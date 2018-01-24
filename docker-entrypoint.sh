@@ -166,8 +166,10 @@ EOPHP
     unset "$e"
   done
 
-  # fix permissions for wp-content
-  chown -R "$user:$group" wp-content
+  # fix permissions
+  chown    "$user:$group" wp-content
+  chown -R "$user:$group" wp-content/plugins
+  chown -R "$user:$group" wp-content/uploads
 fi
 
 exec "$@"
