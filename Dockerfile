@@ -51,8 +51,7 @@ RUN set -ex; \
   tar -xzf wordpress.tar.gz -C /var/www/; \
   rm wordpress.tar.gz; \
   mv /var/www/wordpress/* /var/www/html/; \
-  rm -rf /var/www/wordpress; \
-  chown -R www-data:www-data /var/www/html
+  rm -rf /var/www/wordpress
 
 VOLUME /var/www/html/wp-content/uploads
 
