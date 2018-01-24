@@ -54,6 +54,8 @@ RUN set -ex; \
   rm -rf /var/www/wordpress; \
   chown -R www-data:www-data /var/www/html
 
+VOLUME /var/www/html/wp-content/uploads
+
 COPY docker-entrypoint.sh /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh

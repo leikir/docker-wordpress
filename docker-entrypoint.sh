@@ -165,6 +165,9 @@ EOPHP
   for e in "${envs[@]}"; do
     unset "$e"
   done
+
+  # fix permissions for wp-content
+  chown -R "$user:$group" wp-content
 fi
 
 exec "$@"
