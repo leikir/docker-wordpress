@@ -172,9 +172,11 @@ EOPHP
   chown -R "$user:$group" wp-content/uploads
 fi
 
-for f in /docker-entrypoint.d/*; do
-  echo "$0: running $f"
-  . "$f"
-done
+if [ -d /docker-entrypoint.d ]; then
+  for f in /docker-entrypoint.d/*; do
+    echo "$0: running $f"
+    . "$f"
+  done
+fi
 
 exec "$@"
