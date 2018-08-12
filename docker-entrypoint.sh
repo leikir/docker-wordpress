@@ -159,6 +159,9 @@ EOPHP
       set_config 'WP_DEBUG' 1 boolean
     fi
 
+    # deactivate WordPress automatic updates
+    set_config 'WP_AUTO_UPDATE_CORE' 0 boolean
+
   fi
 
   # now that we're definitely done writing configuration, let's clear out the relevant envrionment variables (so that stray "phpinfo()" calls don't leak secrets from our code)
