@@ -1,4 +1,4 @@
-FROM php:7.2.4-apache
+FROM php:7.2.8-apache
 
 # install the PHP extensions we need
 RUN set -ex; \
