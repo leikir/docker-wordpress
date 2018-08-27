@@ -170,6 +170,8 @@ EOPHP
   done
 
   # fix permissions
+  touch                   .htaccess
+  chown    "$user:$group" .htaccess
   chown    "$user:$group" wp-content
   chown -R "$user:$group" wp-content/plugins
   chown -R "$user:$group" wp-content/uploads
