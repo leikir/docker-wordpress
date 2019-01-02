@@ -39,6 +39,14 @@ RUN { \
     echo 'opcache.enable_cli=1'; \
   } > /usr/local/etc/php/conf.d/opcache-recommended.ini
 
+# Install Memcache ## Temporarily disabled for PHP7
+RUN yes '' | pecl install -f memcache
+RUN docker-php-ext-enable memcache
+
+#Install APC php opcode caching
+RUN yes '' |  pecl install -f apcu-5.1.6
+RUN docker-php-ext-enable apcu
+
 RUN a2enmod rewrite expires ext_filter headers
 
 ENV WORDPRESS_VERSION 4.9.8
