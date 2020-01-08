@@ -1,4 +1,4 @@
-FROM php:7.3.4-apache
+FROM php:7.4.1-apache
 
 # install the PHP extensions we need
 RUN set -ex; \
@@ -41,8 +41,8 @@ RUN { \
 
 RUN a2enmod rewrite expires ext_filter headers
 
-ENV WORDPRESS_VERSION 5.1.1
-ENV WORDPRESS_SHA1 f1bff89cc360bf5ef7086594e8a9b68b4cbf2192
+ENV WORDPRESS_VERSION 5.3.2
+ENV WORDPRESS_SHA1 fded476f112dbab14e3b5acddd2bcfa550e7b01b
 
 RUN set -ex; \
   curl -o wordpress.tar.gz -fSL "https://wordpress.org/wordpress-${WORDPRESS_VERSION}.tar.gz"; \
