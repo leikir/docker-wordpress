@@ -29,6 +29,11 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
       apache2*)
         user="${APACHE_RUN_USER:-www-data}"
         group="${APACHE_RUN_GROUP:-www-data}"
+
+        # strip off any '#' symbol ('#1000' is valid syntax for Apache)
+        pound='#'
+        user="${user#$pound}"
+        group="${group#$pound}"
         ;;
       *) # php-fpm
         user='www-data'
@@ -57,9 +62,12 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
     WORDPRESS_DB_USER
     WORDPRESS_DB_PASSWORD
     WORDPRESS_DB_NAME
+    WORDPRESS_DB_CHARSET
+    WORDPRESS_DB_COLLATE
     "${uniqueEnvs[@]/#/WORDPRESS_}"
     WORDPRESS_TABLE_PREFIX
     WORDPRESS_DEBUG
+    WORDPRESS_CONFIG_EXTRA
   )
   haveConfig=
   for e in "${envs[@]}"; do
@@ -88,6 +96,8 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
     : "${WORDPRESS_DB_USER:=root}"
     : "${WORDPRESS_DB_PASSWORD:=}"
     : "${WORDPRESS_DB_NAME:=wordpress}"
+    : "${WORDPRESS_DB_CHARSET:=utf8}"
+    : "${WORDPRESS_DB_COLLATE:=}"
 
     # version 4.4.1 decided to switch to windows line endings, that breaks our seds and awks
     # https://github.com/docker-library/wordpress/issues/116
@@ -95,15 +105,37 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
     sed -ri -e 's/\r$//' wp-config*
 
     if [ ! -e wp-config.php ]; then
-      awk '/^\/\*.*stop editing.*\*\/$/ && c == 0 { c = 1; system("cat") } { print }' wp-config-sample.php > wp-config.php <<'EOPHP'
-// If we're behind a proxy server and using HTTPS, we need to alert Wordpress of that fact
+      awk '
+        /^\/\*.*stop editing.*\*\/$/ && c == 0 {
+          c = 1
+          system("cat")
+          if (ENVIRON["WORDPRESS_CONFIG_EXTRA"]) {
+            print "// WORDPRESS_CONFIG_EXTRA"
+            print ENVIRON["WORDPRESS_CONFIG_EXTRA"] "\n"
+          }
+        }
+        { print }
+      ' wp-config-sample.php > wp-config.php <<'EOPHP'
+// If we're behind a proxy server and using HTTPS, we need to alert WordPress of that fact
 // see also http://codex.wordpress.org/Administration_Over_SSL#Using_a_Reverse_Proxy
 if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
   $_SERVER['HTTPS'] = 'on';
 }
 
+// deactivate WordPress automatic updates
+// and force local updates
+define('WP_AUTO_UPDATE_CORE', false);
+define('FS_METHOD', 'direct');
+
 EOPHP
       chown "$user:$group" wp-config.php
+    elif [ -e wp-config.php ] && [ -n "$WORDPRESS_CONFIG_EXTRA" ] && [[ "$(< wp-config.php)" != *"$WORDPRESS_CONFIG_EXTRA"* ]]; then
+      # (if the config file already contains the requested PHP code, don't print a warning)
+      echo >&2
+      echo >&2 'WARNING: environment variable "WORDPRESS_CONFIG_EXTRA" is set, but "wp-config.php" already exists'
+      echo >&2 '  The contents of this variable will _not_ be inserted into the existing "wp-config.php" file.'
+      echo >&2 '  (see https://github.com/docker-library/wordpress/issues/333 for more details)'
+      echo >&2
     fi
 
     # see http://stackoverflow.com/a/2705678/433558
@@ -137,6 +169,8 @@ EOPHP
     set_config 'DB_USER' "$WORDPRESS_DB_USER"
     set_config 'DB_PASSWORD' "$WORDPRESS_DB_PASSWORD"
     set_config 'DB_NAME' "$WORDPRESS_DB_NAME"
+    set_config 'DB_CHARSET' "$WORDPRESS_DB_CHARSET"
+    set_config 'DB_COLLATE' "$WORDPRESS_DB_COLLATE"
 
     for unique in "${uniqueEnvs[@]}"; do
       uniqVar="WORDPRESS_$unique"
@@ -158,10 +192,6 @@ EOPHP
     if [ "$WORDPRESS_DEBUG" ]; then
       set_config 'WP_DEBUG' 1 boolean
     fi
-
-    # deactivate WordPress automatic updates
-    set_config 'WP_AUTO_UPDATE_CORE' 0 boolean
-
   fi
 
   # now that we're definitely done writing configuration, let's clear out the relevant envrionment variables (so that stray "phpinfo()" calls don't leak secrets from our code)
@@ -170,11 +200,20 @@ EOPHP
   done
 
   # fix permissions
-  touch                   .htaccess
-  chown    "$user:$group" .htaccess
-  chown    "$user:$group" wp-content
-  chown -R "$user:$group" wp-content/plugins
-  chown -R "$user:$group" wp-content/uploads
+
+  # 1. make sure .htaccess is editable by WordPress
+  touch .htaccess
+  chown "$user:$group" .htaccess
+
+  # 2. allow local updates (plugins, translations, etc.)
+  mkdir -p wp-content/upgrade
+  chown -R "$user:$group" wp-content/upgrade
+
+  # chown    "$user:$group" wp-content
+  # chown -R "$user:$group" wp-content/languages
+  # chown -R "$user:$group" wp-content/plugins
+  # chown -R "$user:$group" wp-content/themes
+  # chown -R "$user:$group" wp-content/uploads
 fi
 
 if [ -d /docker-entrypoint.d ]; then
