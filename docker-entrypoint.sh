@@ -124,7 +124,7 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROT
 
 // deactivate WordPress automatic updates
 // and force local updates
-define('WP_AUTO_UPDATE_CORE', false);
+define('AUTOMATIC_UPDATER_DISABLED', true);
 define('FS_METHOD', 'direct');
 
 EOPHP
