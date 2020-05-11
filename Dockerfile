@@ -1,4 +1,4 @@
-FROM php:7.2.26-apache
+FROM php:7.2.30-apache
 
 # install the PHP extensions we need
 RUN set -ex; \
@@ -39,10 +39,42 @@ RUN { \
     echo 'opcache.enable_cli=1'; \
   } > /usr/local/etc/php/conf.d/opcache-recommended.ini
 
-RUN a2enmod rewrite expires ext_filter headers
+# https://wordpress.org/support/article/editing-wp-config-php/#configure-error-logging
+# https://www.php.net/manual/en/errorfunc.constants.php
+# https://github.com/docker-library/wordpress/issues/420#issuecomment-517839670
+RUN { \
+    echo 'error_reporting = E_ERROR | E_WARNING | E_PARSE | E_CORE_ERROR | E_CORE_WARNING | E_COMPILE_ERROR | E_COMPILE_WARNING | E_RECOVERABLE_ERROR'; \
+    echo 'display_errors = Off'; \
+    echo 'display_startup_errors = Off'; \
+    echo 'log_errors = On'; \
+    echo 'error_log = /dev/stderr'; \
+    echo 'log_errors_max_len = 1024'; \
+    echo 'ignore_repeated_errors = On'; \
+    echo 'ignore_repeated_source = Off'; \
+    echo 'html_errors = Off'; \
+  } > /usr/local/etc/php/conf.d/error-logging.ini
 
-ENV WORDPRESS_VERSION 5.3.2
-ENV WORDPRESS_SHA1 fded476f112dbab14e3b5acddd2bcfa550e7b01b
+RUN set -eux; \
+    a2enmod rewrite expires ext_filter headers; \
+    \
+# https://httpd.apache.org/docs/2.4/mod/mod_remoteip.html
+    a2enmod remoteip; \
+    { \
+      echo 'RemoteIPHeader X-Forwarded-For'; \
+# these IP ranges are reserved for "private" use and should thus *usually* be safe inside Docker
+      echo 'RemoteIPTrustedProxy 10.0.0.0/8'; \
+      echo 'RemoteIPTrustedProxy 172.16.0.0/12'; \
+      echo 'RemoteIPTrustedProxy 192.168.0.0/16'; \
+      echo 'RemoteIPTrustedProxy 169.254.0.0/16'; \
+      echo 'RemoteIPTrustedProxy 127.0.0.0/8'; \
+    } > /etc/apache2/conf-available/remoteip.conf; \
+    a2enconf remoteip; \
+# https://github.com/docker-library/wordpress/issues/383#issuecomment-507886512
+# (replace all instances of "%h" with "%a" in LogFormat)
+    find /etc/apache2 -type f -name '*.conf' -exec sed -ri 's/([[:space:]]*LogFormat[[:space:]]+"[^"]*)%h([^"]*")/\1%a\2/g' '{}' +
+
+ENV WORDPRESS_VERSION 5.4.1
+ENV WORDPRESS_SHA1 9800c231828eb5cd76ba0b8aa6c1a74dfca2daff
 
 RUN set -ex; \
   curl -o wordpress.tar.gz -fSL "https://wordpress.org/wordpress-${WORDPRESS_VERSION}.tar.gz"; \
