@@ -8,10 +8,10 @@ RUN set -ex; \
   apt-get update; \
   apt-get install -y --no-install-recommends \
   libjpeg-dev \
-  libpng-dev \
+  libfreetype6-dev \
   ; \
   \
-  docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr; \
+  docker-php-ext-configure gd --with-freetype=/usr --with-jpeg=/usr; \
   docker-php-ext-install gd mysqli opcache; \
   \
   # reset apt-mark's "manual" list so that "purge --auto-remove" will remove all build dependencies
@@ -74,7 +74,7 @@ RUN set -eux; \
   find /etc/apache2 -type f -name '*.conf' -exec sed -ri 's/([[:space:]]*LogFormat[[:space:]]+"[^"]*)%h([^"]*")/\1%a\2/g' '{}' +
 
 ENV WORDPRESS_VERSION 5.8.2
-ENV WORDPRESS_SHA1 da7b92d177fed052636c46a1804e6e18925a7074
+ENV WORDPRESS_SHA1 c3b1b59553eafbf301c83b14c5eeae4cf1c86044
 
 RUN set -ex; \
   curl -o wordpress.tar.gz -fSL "https://wordpress.org/wordpress-${WORDPRESS_VERSION}.tar.gz"; \
