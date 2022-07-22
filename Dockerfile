@@ -73,8 +73,8 @@ RUN set -eux; \
   # (replace all instances of "%h" with "%a" in LogFormat)
   find /etc/apache2 -type f -name '*.conf' -exec sed -ri 's/([[:space:]]*LogFormat[[:space:]]+"[^"]*)%h([^"]*")/\1%a\2/g' '{}' +
 
-ENV WORDPRESS_VERSION 5.8.2
-ENV WORDPRESS_SHA1 c3b1b59553eafbf301c83b14c5eeae4cf1c86044
+ENV WORDPRESS_VERSION 6.0.1
+ENV WORDPRESS_SHA1 a1c02b6b754d74c08a70d5a8b604bdb72f1b276a
 
 RUN set -ex; \
   curl -o wordpress.tar.gz -fSL "https://wordpress.org/wordpress-${WORDPRESS_VERSION}.tar.gz"; \

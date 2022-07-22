@@ -209,7 +209,7 @@ EOPHP
   mkdir -p wp-content/upgrade
   chown -R "$user:$group" wp-content/upgrade
 
-  # chown    "$user:$group" wp-content
+  chown -R  "$user:$group" wp-content
   # chown -R "$user:$group" wp-content/languages
   # chown -R "$user:$group" wp-content/plugins
   # chown -R "$user:$group" wp-content/themes
